@@ -20,7 +20,7 @@ public class ServiceCaller {
 	    System.out.println("Longitude: "+fio.getLongitude());
 	    System.out.println("Timezone: "+fio.getTimezone());
 	    System.out.println("Offset: "+fio.offset());
-	    
+	    //just a test
 //	    FIODaily daily = new FIODaily(fio);
 //	    String [] f  = daily.days().getFieldsArray();
 //	    FIOCurrently currently = new FIOCurrently(fio);
