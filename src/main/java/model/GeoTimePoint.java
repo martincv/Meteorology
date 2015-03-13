@@ -1,4 +1,4 @@
-package core;
+package model;
 
 public class GeoTimePoint extends GeoPoint {
 
@@ -8,9 +8,11 @@ public class GeoTimePoint extends GeoPoint {
 		return time;
 	}
 
-	public void setTime(long time) {
-		this.time = time;
+	public void setTime(long d) {
+		this.time = d;
 	}
+	
+	public GeoTimePoint(){}
 
 	public GeoTimePoint(double latitude, double longitude, long time) {
 		super(latitude, longitude);

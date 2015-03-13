@@ -3,6 +3,8 @@ package core;
 import java.util.ArrayList;
 import java.util.List;
 
+import model.GeoPoint;
+
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
@@ -15,12 +17,15 @@ public class MeteoService {
 	
 	public MeteoService(double[] areaPoints, String timeFrom, String timeTo) {
 		this.areaPoints = extractAreaPoints(areaPoints);
-		this.timeFrom = getSecondsPassdSince1970(timeFrom);
-		this.timeTo = getSecondsPassdSince1970(timeTo);
-		
+		this.timeFrom = getSecondsPassedSince1970(timeFrom);
+		this.timeTo = getSecondsPassedSince1970(timeTo);
+	}
+	
+	public String findMostExtremePoints(){
+		return "Not implemented yet";
 	}
 
-	private long getSecondsPassdSince1970(String time) {
+	private long getSecondsPassedSince1970(String time) {
 		DateTime date = ISODateTimeFormat.dateTimeParser().parseDateTime(time);
 		return date.getMillis() / 1000;
 	}

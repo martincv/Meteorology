@@ -14,6 +14,7 @@ public class ServiceCaller {
 		ForecastIO fio = new ForecastIO("3b7da2be19497ca170e70829ffa73d1f");
 	    fio.setUnits(ForecastIO.UNITS_SI);
 	    fio.setLang(ForecastIO.LANG_ENGLISH);
+	    System.out.println(Long.toString(t2));
 	    fio.setTime(Long.toString(t2));
 	    fio.getForecast("46.0514263", "14.505965500000002");
 	    System.out.println("Latitude: "+fio.getLatitude());

@@ -1,8 +1,10 @@
-package core;
+package model;
 
 public class GeoPoint {
 	private double latitude;
 	private double longitude;
+	
+	public GeoPoint(){}
 	
 	public GeoPoint(double latitude, double longitude) {
 		super();
