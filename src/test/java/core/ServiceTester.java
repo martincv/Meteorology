@@ -23,17 +23,11 @@ public class ServiceTester {
 			System.out.println(meteoPoint.getLatitude());
 			System.out.println(meteoPoint.getLongitude());
 			System.out.println(meteoPoint.getTime());
-			System.out.println(meteoPoint.getApparentTemperature());
-			System.out.println(meteoPoint.getApparentTemperatureMax());
-			System.out.println(meteoPoint.getApparentTemperatureMin());
 			System.out.println(meteoPoint.getTemperature());
-			System.out.println(meteoPoint.getTemperatureMin());
-			System.out.println(meteoPoint.getTemperatureMax());
 			System.out.println(meteoPoint.getPrecipIntensity());
 			System.out.println(meteoPoint.getPrecipType());
 			System.out.println(meteoPoint.getPrecipProbability());
 			System.out.println(meteoPoint.getPrecipIntensity());
-			System.out.println(meteoPoint.getPrecipIntensityMax());
 			System.out.println(meteoPoint.getHumidity());
 			System.out.println(meteoPoint.getPressure());
 			System.out.println(meteoPoint.getNearestStormDistance());

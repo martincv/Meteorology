@@ -1,5 +1,7 @@
 package core;
 
+import com.github.dvdme.ForecastIOLib.FIOCurrently;
+import com.github.dvdme.ForecastIOLib.FIODataPoint;
 import com.github.dvdme.ForecastIOLib.ForecastIO;
 
 public class ServiceCaller {
@@ -14,7 +16,7 @@ public class ServiceCaller {
 		ForecastIO fio = new ForecastIO("3b7da2be19497ca170e70829ffa73d1f");
 	    fio.setUnits(ForecastIO.UNITS_SI);
 	    fio.setLang(ForecastIO.LANG_ENGLISH);
-	    System.out.println(Long.toString(t2));
+	    System.out.println(Long.toString(t1));
 	    fio.setTime(Long.toString(t2));
 	    fio.getForecast("46.0514263", "14.505965500000002");
 	    System.out.println("Latitude: "+fio.getLatitude());
@@ -22,25 +24,22 @@ public class ServiceCaller {
 	    System.out.println("Timezone: "+fio.getTimezone());
 	    System.out.println("Offset: "+fio.offset());
 	    //just a test
-//	    FIODaily daily = new FIODaily(fio);
-//	    String [] f  = daily.days().getFieldsArray();
-//	    FIOCurrently currently = new FIOCurrently(fio);
-//	    for(int i = 0; i<f.length;i++)
-//	        System.out.println(f[i]+": "+currently.get().getByKey(f[i]));
-//	    
-//	    //Print currently data
-//	    System.out.println("\nCurrently\n");
-//	    String [] f  = currently.get().getFieldsArray();
-//	    FIODataPoint dataPoint = currently.get();
-//	    System.out.println("tmax:" + dataPoint.temperatureMax());
-//	    System.out.println("precipAcc:" + dataPoint.precipAccumulation());
-//	    System.out.println(dataPoint.precipType());
-//	    System.out.println(dataPoint.precipIntensity());
-//	    System.out.println(dataPoint.precipProbability());
-//	    System.out.println(dataPoint.temperature());
-//	    
-//	    for(int i = 0; i<f.length;i++)
-//	        System.out.println(f[i]+": "+currently.get().getByKey(f[i]));
+	    FIOCurrently currently = new FIOCurrently(fio);
+	    //Print currently data
+	    System.out.println("\nCurrently\n");
+	    String [] f  = currently.get().getFieldsArray();
+	    FIODataPoint dataPoint = currently.get();
+	    System.out.println("tmax:" + dataPoint.temperatureMax());
+	    System.out.println("precipAcc:" + dataPoint.precipAccumulation());
+	    System.out.println(dataPoint.precipType());
+	    System.out.println(dataPoint.precipIntensity());
+	    System.out.println(dataPoint.precipProbability());
+	    System.out.println(dataPoint.temperature());
+	    
+	    for(int i = 0; i<f.length;i++)
+	        System.out.println(f[i]+": "+currently.get().getByKey(f[i]));
    }
 
 }
+
+

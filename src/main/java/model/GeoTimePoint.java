@@ -2,19 +2,19 @@ package model;
 
 public class GeoTimePoint extends GeoPoint {
 
-	private long time;
+	private Long time;
 	
-	public long getTime() {
+	public Long getTime() {
 		return time;
 	}
 
-	public void setTime(long d) {
+	public void setTime(Long d) {
 		this.time = d;
 	}
 	
 	public GeoTimePoint(){}
 
-	public GeoTimePoint(double latitude, double longitude, long time) {
+	public GeoTimePoint(Double latitude, Double longitude, Long time) {
 		super(latitude, longitude);
 		this.time = time;
 	}
