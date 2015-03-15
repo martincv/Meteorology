@@ -9,6 +9,16 @@ public class SearchQuery {
 	private Long timeFrom;
 	private Long timeTo;
 	
+	public SearchQuery(){}
+	
+	public SearchQuery(List<GeoPoint> areaPoints,
+			List<MeteoPoint> queriedPoints, Long timeFrom, Long timeTo) {
+		super();
+		this.areaPoints = areaPoints;
+		this.queriedPoints = queriedPoints;
+		this.timeFrom = timeFrom;
+		this.timeTo = timeTo;
+	}
 	public List<MeteoPoint> getQueriedPoints() {
 		return queriedPoints;
 	}

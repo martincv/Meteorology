@@ -52,7 +52,7 @@ public class SearchQueryDAO {
 	private void insertMeteoPoints(List<MeteoPoint> meteoPoints, int searchId, Connection dbConnection) throws SQLException {
 		String sql = "INSERT INTO Meteopoints"
 				+ " (searchId, latitude,longitude,time,precipIntensity, precipProbability, precipType,"
-				+ " precipAccumulation, temperature, windSpeed, humidity, pressure, nearestStromDistance)"
+				+ " precipAccumulation, temperature, windSpeed, humidity, pressure, nearestStormDistance)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		PreparedStatement statement = dbConnection.prepareStatement(sql);
 		
