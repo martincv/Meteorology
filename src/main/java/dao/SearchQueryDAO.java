@@ -12,6 +12,10 @@ import model.MeteoPoint;
 import model.SearchQuery;
 
 public class SearchQueryDAO {
+	
+	public void findRelatedPoints(Long timeFrom, Long timeTo, List<GeoPoint> areaPoints) {
+		String sql = "SELECT * FROM MeteoPoints where time >= ? AND time <= ?";
+	}
  
 	public void insertNewQuery(SearchQuery search) throws SQLException{
  

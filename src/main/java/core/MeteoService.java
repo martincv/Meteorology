@@ -3,6 +3,7 @@ package core;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import model.GeoPoint;
 import model.GeoTimePoint;
@@ -39,19 +40,77 @@ public class MeteoService {
 	
 	/**
 	 * At the moment just return some fixed points.
-	 * This is where your code goes Bojana by using areaPoints, timeFrom and timeTo.
 	 */
 	private List<GeoTimePoint> getRandomPointsWithinArea() {
 		List<GeoTimePoint> geoTimePoints = new ArrayList<GeoTimePoint>();
-		geoTimePoints.add(new GeoTimePoint(48.887690, 2.378283, getSecondsPassedSince1970("2014-01-01T01:10:00+02")));
-		geoTimePoints.add(new GeoTimePoint(47.273115, -1.554822, getSecondsPassedSince1970("2014-04-04T03:20:00+02")));
-		geoTimePoints.add(new GeoTimePoint(44.833900, -0.544080, getSecondsPassedSince1970("2014-07-07T05:30:00+02")));
-		geoTimePoints.add(new GeoTimePoint(45.776564, 4.795276, getSecondsPassedSince1970("2014-10-10T07:40:00+02")));
-		geoTimePoints.add(new GeoTimePoint(48.685011, 6.179553, getSecondsPassedSince1970("2015-01-13T09:50:00+02")));
-		geoTimePoints.add(new GeoTimePoint(49.118321, 6.179553, getSecondsPassedSince1970("2015-02-16T11:22:00+02")));
-		geoTimePoints.add(new GeoTimePoint(48.130752, -1.664685, getSecondsPassedSince1970("2015-03-19T13:11:00+02")));
+		Double[] minMaxBorders = getMaxMinBorders();
+		System.out.println(minMaxBorders[0] + " "+ minMaxBorders[1] + " " + minMaxBorders[2] + " " + minMaxBorders[3]);
+		Random rd = new Random();
+		for (int i = 0; i < 10;) {
+			double randomLatitude = minMaxBorders[0] + (minMaxBorders[1] - minMaxBorders[0]) * rd.nextDouble();
+			double randomLongitude = minMaxBorders[2] + (minMaxBorders[3] - minMaxBorders[2]) * rd.nextDouble();
+			GeoPoint geoPoint = new GeoPoint(randomLatitude, randomLongitude);
+			if(isLocationInsideArea(geoPoint)) {
+				i++;
+				long time = timeFrom + (long)(rd.nextDouble()*(timeTo-timeFrom));
+				System.out.println("rg:" + randomLatitude + " " + randomLongitude + " " +time);
+				geoTimePoints.add(new GeoTimePoint(randomLatitude, randomLongitude, time));
+			} 
+		}
 		return geoTimePoints;
 	}
+	
+	private Double[] getMaxMinBorders() {
+		Double[] minMaxBorders = new Double[4];
+		minMaxBorders[0] = areaPoints.get(0).getLatitude();
+		minMaxBorders[1] = areaPoints.get(0).getLatitude();
+		minMaxBorders[2] = areaPoints.get(0).getLongitude();
+		minMaxBorders[3] = areaPoints.get(0).getLongitude();
+		for (GeoPoint geoPoint : areaPoints) {
+			if (geoPoint.getLatitude() < minMaxBorders[0]) {
+				minMaxBorders[0] = geoPoint.getLatitude();
+			}
+			if (geoPoint.getLatitude() > minMaxBorders[1]) {
+				minMaxBorders[1] = geoPoint.getLatitude();
+			}
+			if (geoPoint.getLongitude() < minMaxBorders[2]) {
+				minMaxBorders[2] = geoPoint.getLongitude();
+			}
+			if (geoPoint.getLongitude() > minMaxBorders[3]) {
+				minMaxBorders[3] = geoPoint.getLongitude();
+			}
+		}
+		return minMaxBorders;
+	}
+	
+	
+    /**
+     * Returns true if a given location (LatLon) is located inside a given polygon
+     *
+     * @param point the location
+     * @param positions the list of positions describing the polygon. Last one should be the same as the first one.
+     * @return true if the location is inside the polygon.
+     */
+    private boolean isLocationInsideArea(GeoPoint point)
+    {
+
+        boolean result = false;
+        GeoPoint p1 = areaPoints.get(0);
+        for (int i = 1; i < areaPoints.size(); i++) {
+            GeoPoint p2 = areaPoints.get(i);
+            if ( ((p2.getLatitude() <= point.getLatitude()
+                    && point.getLatitude() < p1.getLatitude()) ||
+                    (p1.getLatitude() <= point.getLatitude()
+                            && point.getLatitude() < p2.getLatitude()))
+                    && (point.getLongitude() < (p1.getLongitude() - p2.getLongitude())
+                    * (point.getLatitude() - p2.getLatitude())
+                    / (p1.getLatitude() - p2.getLatitude()) + p2.getLongitude()) )
+                result = !result;
+
+            p1 = p2;
+        }
+        return result;
+    }
 	
 	private List<MeteoPoint> findPreviousPointsForSameRegionAndTime() {
 		return new ArrayList<MeteoPoint>();
