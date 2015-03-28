@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 import model.GeoPoint;
@@ -13,8 +14,54 @@ import model.SearchQuery;
 
 public class SearchQueryDAO {
 	
-	public void findRelatedPoints(Long timeFrom, Long timeTo, List<GeoPoint> areaPoints) {
+	public static List<MeteoPoint> findRelatedPoints(Long timeFrom, Long timeTo) throws SQLException {
+		List<MeteoPoint> relatedPoints = new ArrayList<MeteoPoint>();
 		String sql = "SELECT * FROM MeteoPoints where time >= ? AND time <= ?";
+		Connection dbConnection = null;
+		PreparedStatement statement = null;
+ 
+		try {
+			
+			dbConnection = JdbcConnectionHelper.getDBConnection();
+			
+			statement = dbConnection.prepareStatement(sql);
+			statement.setLong(1, timeFrom);
+			statement.setLong(2, timeTo);
+			 
+			// execute select SQL stetement
+			ResultSet rs = statement.executeQuery();
+ 
+			while (rs.next()) {
+ 
+				Double latitude = rs.getDouble("latitude");
+				Double longitude = rs.getDouble("longitude");
+				Long time = rs.getLong("time");
+				Double precipIntensity = rs.getDouble("precipIntensity");
+				Double precipProbability = rs.getDouble("precipProbability");
+				String precipType = rs.getString("precipType");
+				Double precipAccumulation = rs.getDouble("precipAccumulation");
+				Double temperature = rs.getDouble("temperature");
+				Double windSpeed = rs.getDouble("windSpeed");
+				Double humidity = rs.getDouble("humidity");
+				Double pressure = rs.getDouble("pressure");
+				Double nearestStormDistance = rs.getDouble("nearestStormDistance");
+				MeteoPoint meteoPoint = new MeteoPoint(latitude, longitude, time, precipIntensity,
+						precipProbability, precipType, precipAccumulation,
+						temperature, windSpeed, humidity, pressure,nearestStormDistance);
+				relatedPoints.add(meteoPoint);
+			}
+			return relatedPoints;
+		} finally {
+ 
+			if (statement != null) {
+				statement.close();
+			}
+ 
+			if (dbConnection != null) {
+				dbConnection.close();
+			}
+ 
+		}
 	}
  
 	public void insertNewQuery(SearchQuery search) throws SQLException{

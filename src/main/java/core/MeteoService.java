@@ -2,8 +2,10 @@ package core;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import model.GeoPoint;
 import model.GeoTimePoint;
@@ -33,11 +35,19 @@ public class MeteoService {
 		List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
 		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
 		saveQueryToDatabase(meteoPoints);
-		meteoPoints.addAll(previousPoints);
+		meteoPoints = concatenate(meteoPoints, previousPoints);
 		locateExtremePoints(meteoPoints);
 		return "Not implemented yet";
 	}
 	
+	private List<MeteoPoint> concatenate(List<MeteoPoint> meteoPoints,
+			List<MeteoPoint> previousPoints) {
+		Set<MeteoPoint> set = new HashSet<MeteoPoint>(meteoPoints);
+		set.addAll(previousPoints);
+		List<MeteoPoint> mergedList = new ArrayList<MeteoPoint>(set);
+		return mergedList;
+	}
+
 	/**
 	 * At the moment just return some fixed points.
 	 */
@@ -46,7 +56,7 @@ public class MeteoService {
 		Double[] minMaxBorders = getMaxMinBorders();
 		System.out.println(minMaxBorders[0] + " "+ minMaxBorders[1] + " " + minMaxBorders[2] + " " + minMaxBorders[3]);
 		Random rd = new Random();
-		for (int i = 0; i < 10;) {
+		for (int i = 0; i < 400;) {
 			double randomLatitude = minMaxBorders[0] + (minMaxBorders[1] - minMaxBorders[0]) * rd.nextDouble();
 			double randomLongitude = minMaxBorders[2] + (minMaxBorders[3] - minMaxBorders[2]) * rd.nextDouble();
 			GeoPoint geoPoint = new GeoPoint(randomLatitude, randomLongitude);
@@ -112,8 +122,9 @@ public class MeteoService {
         return result;
     }
 	
-	private List<MeteoPoint> findPreviousPointsForSameRegionAndTime() {
-		return new ArrayList<MeteoPoint>();
+	private List<MeteoPoint> findPreviousPointsForSameRegionAndTime() throws SQLException {
+		List<MeteoPoint> previousPoints = SearchQueryDAO.findRelatedPoints(timeFrom, timeTo);
+		return previousPoints;
 	}
 	
 	private void locateExtremePoints(List<MeteoPoint> meteoPoints) {

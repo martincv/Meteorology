@@ -89,5 +89,24 @@ public class MeteoPoint extends GeoTimePoint {
 	public void setNearestStormDistance(Double nearestStormDistance) {
 		this.nearestStormDistance = nearestStormDistance;
 	}
-
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof MeteoPoint))
+            return false;
+		MeteoPoint point = (MeteoPoint) obj;
+        if (this.getLongitude() == point.getLongitude() && 
+        	this.getLatitude() == point.getLatitude() && 
+        	this.getTime() == point.getTime()) {
+        	return true;
+        } else {
+        	return false;
+        }
+	}
+	
+	@Override
+	public int hashCode() {
+		String hashCode = this.getLongitude() + "" + this.getLatitude() + "" + this.getTime();
+		return hashCode.hashCode();
+	}
 }
