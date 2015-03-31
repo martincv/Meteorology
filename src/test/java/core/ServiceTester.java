@@ -9,6 +9,7 @@ import model.MeteoPoint;
 public class ServiceTester {
 
 	public static void main(String[] args) {
+		System.out.println("Test");
 		MeteoService meteo = new MeteoService(new double[] {1.0,2.0}, "2015-09-03T11:44:00+02", 
 				"2014-09-03T20:18:00+02");
 		long t1 = meteo.getTimeFrom();
