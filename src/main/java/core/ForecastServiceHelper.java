@@ -25,7 +25,7 @@ public class ForecastServiceHelper {
 		List<MeteoPoint> meteoPoints = new ArrayList<MeteoPoint>();
 		for (GeoTimePoint geoTimePoint : geoPoints) {
 			MeteoPoint point = getDataForPoint(geoTimePoint);
-			if (point != null) {
+			if (point != null && point.getTemperature() != -300.0) {
 				meteoPoints.add(point);
 			}
 		}
@@ -39,7 +39,7 @@ public class ForecastServiceHelper {
 		final String latitude = Double.toString(geoTimePoint.getLatitude());
 		final String longitude = Double.toString(geoTimePoint.getLongitude());
 		
-		System.out.println(time + " " + latitude + " " + longitude);
+//		System.out.println(time + " " + latitude + " " + longitude);
 	    
 	    ExecutorService service = Executors.newSingleThreadExecutor();
 	    Future<ForecastIO> future = service.submit(new Callable<ForecastIO>() {
@@ -92,7 +92,7 @@ public class ForecastServiceHelper {
 		} else {
 			point.setTemperature(dataPoint.temperature());
 		}
-		System.out.println(dataPoint.temperature());
+//		System.out.println(dataPoint.temperature());
 		return point;
 	}
 	

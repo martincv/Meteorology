@@ -15,6 +15,7 @@ import model.SearchQuery;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
+import clustering.KMeansClustering;
 import dao.SearchQueryDAO;
 
 public class MeteoService {
@@ -30,12 +31,12 @@ public class MeteoService {
 		this.timeTo = getSecondsPassedSince1970(timeTo);
 	}
 	
-	public String findMostExtremePoints() throws SQLException{
+	public String findMostExtremePoints() throws SQLException, Exception{
 		List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
 		List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
-		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
-		saveQueryToDatabase(meteoPoints);
-		meteoPoints = concatenate(meteoPoints, previousPoints);
+//		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
+//		saveQueryToDatabase(meteoPoints);
+//		meteoPoints = concatenate(meteoPoints, previousPoints);
 		locateExtremePoints(meteoPoints);
 		return "Not implemented yet";
 	}
@@ -52,18 +53,19 @@ public class MeteoService {
 	 * At the moment just return some fixed points.
 	 */
 	private List<GeoTimePoint> getRandomPointsWithinArea() {
+		int numberOfPoints = 20;
 		List<GeoTimePoint> geoTimePoints = new ArrayList<GeoTimePoint>();
 		Double[] minMaxBorders = getMaxMinBorders();
-		System.out.println(minMaxBorders[0] + " "+ minMaxBorders[1] + " " + minMaxBorders[2] + " " + minMaxBorders[3]);
+//		System.out.println(minMaxBorders[0] + " "+ minMaxBorders[1] + " " + minMaxBorders[2] + " " + minMaxBorders[3]);
 		Random rd = new Random();
-		for (int i = 0; i < 400;) {
+		for (int i = 0; i < numberOfPoints;) {
 			double randomLatitude = minMaxBorders[0] + (minMaxBorders[1] - minMaxBorders[0]) * rd.nextDouble();
 			double randomLongitude = minMaxBorders[2] + (minMaxBorders[3] - minMaxBorders[2]) * rd.nextDouble();
 			GeoPoint geoPoint = new GeoPoint(randomLatitude, randomLongitude);
 			if(isLocationInsideArea(geoPoint)) {
 				i++;
 				long time = timeFrom + (long)(rd.nextDouble()*(timeTo-timeFrom));
-				System.out.println("rg:" + randomLatitude + " " + randomLongitude + " " +time);
+//				System.out.println("rg:" + randomLatitude + " " + randomLongitude + " " +time);
 				geoTimePoints.add(new GeoTimePoint(randomLatitude, randomLongitude, time));
 			} 
 		}
@@ -104,22 +106,23 @@ public class MeteoService {
     private boolean isLocationInsideArea(GeoPoint point)
     {
 
-        boolean result = false;
-        GeoPoint p1 = areaPoints.get(0);
-        for (int i = 1; i < areaPoints.size(); i++) {
-            GeoPoint p2 = areaPoints.get(i);
-            if ( ((p2.getLatitude() <= point.getLatitude()
-                    && point.getLatitude() < p1.getLatitude()) ||
-                    (p1.getLatitude() <= point.getLatitude()
-                            && point.getLatitude() < p2.getLatitude()))
-                    && (point.getLongitude() < (p1.getLongitude() - p2.getLongitude())
-                    * (point.getLatitude() - p2.getLatitude())
-                    / (p1.getLatitude() - p2.getLatitude()) + p2.getLongitude()) )
-                result = !result;
-
-            p1 = p2;
-        }
-        return result;
+//        boolean result = false;
+//        GeoPoint p1 = areaPoints.get(0);
+//        for (int i = 1; i < areaPoints.size(); i++) {
+//            GeoPoint p2 = areaPoints.get(i);
+//            if ( ((p2.getLatitude() <= point.getLatitude()
+//                    && point.getLatitude() < p1.getLatitude()) ||
+//                    (p1.getLatitude() <= point.getLatitude()
+//                            && point.getLatitude() < p2.getLatitude()))
+//                    && (point.getLongitude() < (p1.getLongitude() - p2.getLongitude())
+//                    * (point.getLatitude() - p2.getLatitude())
+//                    / (p1.getLatitude() - p2.getLatitude()) + p2.getLongitude()) )
+//                result = !result;
+//
+//            p1 = p2;
+//        }
+//        return result;
+    	return true;
     }
 	
 	private List<MeteoPoint> findPreviousPointsForSameRegionAndTime() throws SQLException {
@@ -127,8 +130,8 @@ public class MeteoService {
 		return previousPoints;
 	}
 	
-	private void locateExtremePoints(List<MeteoPoint> meteoPoints) {
-		// TODO Auto-generated method stub
+	private void locateExtremePoints(List<MeteoPoint> meteoPoints) throws Exception {
+		KMeansClustering.clusterMeteoPoints(meteoPoints);
 		
 	}
 
