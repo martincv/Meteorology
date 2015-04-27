@@ -31,14 +31,14 @@ public class MeteoService {
 		this.timeTo = getSecondsPassedSince1970(timeTo);
 	}
 	
-	public String findMostExtremePoints() throws SQLException, Exception{
+	public List<List<MeteoPoint>> findMostExtremePoints() throws SQLException, Exception{
 		List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
 		List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
 //		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
 //		saveQueryToDatabase(meteoPoints);
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
-		locateExtremePoints(meteoPoints);
-		return "Not implemented yet";
+		List<List<MeteoPoint>> clusters = locateExtremePoints(meteoPoints);
+		return clusters;
 	}
 	
 	private List<MeteoPoint> concatenate(List<MeteoPoint> meteoPoints,
@@ -53,7 +53,7 @@ public class MeteoService {
 	 * At the moment just return some fixed points.
 	 */
 	private List<GeoTimePoint> getRandomPointsWithinArea() {
-		int numberOfPoints = 20;
+		int numberOfPoints = 30;
 		List<GeoTimePoint> geoTimePoints = new ArrayList<GeoTimePoint>();
 		Double[] minMaxBorders = getMaxMinBorders();
 //		System.out.println(minMaxBorders[0] + " "+ minMaxBorders[1] + " " + minMaxBorders[2] + " " + minMaxBorders[3]);
@@ -130,8 +130,8 @@ public class MeteoService {
 		return previousPoints;
 	}
 	
-	private void locateExtremePoints(List<MeteoPoint> meteoPoints) throws Exception {
-		KMeansClustering.clusterMeteoPoints(meteoPoints);
+	private List<List<MeteoPoint>> locateExtremePoints(List<MeteoPoint> meteoPoints) throws Exception {
+		return KMeansClustering.clusterMeteoPoints(meteoPoints);
 		
 	}
 

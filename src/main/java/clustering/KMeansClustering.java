@@ -72,7 +72,8 @@ public class KMeansClustering {
 	    
 	    double minValidity = Double.MAX_VALUE;
 	    int bestNumberOfClusters = 0;
-	    for (int k=2; k < Math.ceil(Math.sqrt(N)); k++) {
+//	    for (int k=2; k < Math.ceil(Math.sqrt(N)); k++) {
+	    for (int k=2; k <= N / 2; k++) {
 	    	double validity;
 	    	
 		    // create the model 
@@ -132,8 +133,8 @@ public class KMeansClustering {
 		      int clusterNumber = kMeans.clusterInstance(point);
 		      clusters.get(clusterNumber).add(meteoPoints.get(i));
 	    }
-	    ClusterPlot plot = new ClusterPlot(clusters);
-        plot.setVisible(true);
+//	    ClusterPlot plot = new ClusterPlot(clusters);
+//        plot.setVisible(true);
 		return clusters;
 	}
 
