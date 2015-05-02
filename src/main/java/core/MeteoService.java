@@ -66,7 +66,7 @@ public class MeteoService {
 				i++;
 				long time = timeFrom + (long)(rd.nextDouble()*(timeTo-timeFrom));
 //				System.out.println("rg:" + randomLatitude + " " + randomLongitude + " " +time);
-				geoTimePoints.add(new GeoTimePoint(randomLatitude, randomLongitude, time));
+				geoTimePoints.add(new GeoTimePoint(randomLatitude, randomLongitude, timeTo));
 			} 
 		}
 		return geoTimePoints;
