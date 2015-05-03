@@ -32,7 +32,7 @@ public class ForecastServiceHelper {
 		return meteoPoints;
 	}
 
-	private static MeteoPoint getDataForPoint(GeoTimePoint geoTimePoint) {
+	public static MeteoPoint getDataForPoint(GeoTimePoint geoTimePoint) {
 		ForecastIO fio;
 		MeteoPoint meteoPoint = new MeteoPoint();
 		final String time = Long.toString(geoTimePoint.getTime());
@@ -62,8 +62,9 @@ public class ForecastServiceHelper {
 	        fio = future.get(1, TimeUnit.SECONDS);
 	    }
 	    catch(Exception e) {
-	    	System.out.println("nesto");
-	    	e.printStackTrace();
+	    	System.out.println("There is no data for the point: " 
+	    			+ geoTimePoint.getLatitude() + " " + geoTimePoint.getLongitude() + " " + geoTimePoint.getTime() );
+	    	//e.printStackTrace();
 	        return null;
 	    }
         

@@ -14,12 +14,19 @@ import model.SearchQuery;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
+import org.rosuda.JRI.Rengine;
 
 import clustering.KMeansClustering;
+
+import com.google.common.primitives.Doubles;
+
 import dao.SearchQueryDAO;
+import distribution.ProbabilityDistribution;
 
 public class MeteoService {
 	
+	private static final int NUMBER_OF_POSSIBLE_POINTS = 10000;
+	private static final int NUMBER_OF_POINTS_TO_TEST = 100;
 	private List<GeoPoint> areaPoints = new ArrayList<GeoPoint>();
 	private long timeFrom;
 	private long timeTo;
@@ -32,8 +39,9 @@ public class MeteoService {
 	}
 	
 	public List<List<MeteoPoint>> findMostExtremePoints() throws SQLException, Exception{
-		List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
-		List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
+		//List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
+		//List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
+		List<MeteoPoint> meteoPoints = getPointsAccordingToProbabilityDistribution();
 //		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
 //		saveQueryToDatabase(meteoPoints);
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
@@ -49,9 +57,8 @@ public class MeteoService {
 		return mergedList;
 	}
 
-	/**
-	 * At the moment just return some fixed points.
-	 */
+
+	
 	private List<GeoTimePoint> getRandomPointsWithinArea() {
 		int numberOfPoints = 30;
 		List<GeoTimePoint> geoTimePoints = new ArrayList<GeoTimePoint>();
@@ -72,6 +79,139 @@ public class MeteoService {
 		return geoTimePoints;
 	}
 	
+	
+	private List<MeteoPoint> getPointsAccordingToProbabilityDistribution() throws Exception {
+		int numberOfPossiblePoints = NUMBER_OF_POSSIBLE_POINTS;
+		Double[] minMaxBorders = getMaxMinBorders();
+		ProbabilityDistribution pdis = new ProbabilityDistribution();
+		List<List<Double>> possiblePoints = pdis.getAllPossiblePoints(minMaxBorders[0],
+				minMaxBorders[1], 
+				minMaxBorders[2],
+				minMaxBorders[3], numberOfPossiblePoints);
+		
+		numberOfPossiblePoints = possiblePoints.get(0).size();
+		double[] x1 = Doubles.toArray(possiblePoints.get(0));
+		double[] x2 = Doubles.toArray(possiblePoints.get(1));
+		
+		double[] xt1 = new double[NUMBER_OF_POINTS_TO_TEST];
+		double[] xt2 = new double[NUMBER_OF_POINTS_TO_TEST];
+		double[] y = new double[NUMBER_OF_POINTS_TO_TEST];
+		
+		
+		int currentPoint = 0;
+		int i = 0;
+		
+		//Add the four corner points
+		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], xt1, xt2, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], xt1, xt2, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], xt1, xt2, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], xt1, xt2, y, currentPoint);
+		i+=4;
+		
+		//Add 36 more random points
+		Random rd = new Random();
+		for (; i < 40; i++) {
+			int nextPointIndex = rd.nextInt(numberOfPossiblePoints);
+			currentPoint = addCornerPoint(x1[nextPointIndex], x2[nextPointIndex], xt1, xt2, y, currentPoint);
+		}
+		
+		//Pick other points using R' loess
+		String[] Rargs = {"--vanilla"};
+		Rengine re = new Rengine(Rargs, false, null);	
+		if (!re.waitForR()) {
+			System.out.println("Cannot load R");
+			throw new Exception("Can not load R.");
+		}
+		
+		re.assign("currentPoint", new int[] {currentPoint});
+		re.assign("x1", x1);
+		re.assign("x2", x2);
+		re.assign("xt1", xt1);
+		re.eval("xt1 = xt1[1:currentPoint]");
+		re.assign("xt2", xt2);
+		re.eval("xt2 = xt2[1:currentPoint]");
+		re.assign("y", y);
+		re.eval("y = y[1:currentPoint]");
+		re.eval("span = 0.5") ;
+		
+		System.out.println(re.eval("x1"));
+		System.out.println(re.eval("x2"));
+		System.out.println(re.eval("xt1"));
+		System.out.println(re.eval("xt2"));
+
+		int initialValues = currentPoint;
+		for (; i < NUMBER_OF_POINTS_TO_TEST;i++) {
+			re.assign("i", new int[] {currentPoint - initialValues});
+			System.out.println("i = " + re.eval("i").asInt());
+			re.eval("fit <- (loess(y ~ xt1 + xt2, span = span - 0.4* i/100))");
+			re.eval("p <- predict(fit, data.frame(xt1, xt2), se = T)");
+			System.out.println("Probabilities = " + re.eval("p$se"));
+			re.eval("x1.next <- x1[p$se == max(p$se)]");
+			re.eval("rind = sample(1:length(x1.next), 1)");
+			System.out.println(re.eval("rind").asInt());
+			re.eval("x1.next = x1.next[rind]");
+			re.eval("x2.next <- x2[p$se == max(p$se)]");
+			re.eval("x2.next = x2.next[rind]");
+			
+			double x1next = re.eval("x1.next").asDouble();
+			double x2next = re.eval("x2.next").asDouble();
+			System.out.println("x1next = " + x1next);
+			System.out.println("x2next = " + x2next);
+			double tnext = getTemperatureForPoint(x1next, x2next);
+			if (tnext == -300) {
+				continue;
+			}
+			currentPoint++;
+			re.assign("tnext", new double[] {tnext});
+			re.eval("y <- c(y, tnext)");
+			re.eval("xt1 <- c(xt1, x1.next)");
+			re.eval("xt2 <- c(xt2, x2.next)");
+			System.out.println(re.eval("xt1"));
+			System.out.println(re.eval("xt2"));
+			System.out.println(re.eval("y"));
+		}
+		
+		
+		xt1 = re.eval("xt1").asDoubleArray();
+		xt2 = re.eval("xt2").asDoubleArray();
+		y = re.eval("y").asDoubleArray();
+		List<MeteoPoint> temperaturePoints = covertToTemperaturePoints(xt1,xt2,y, currentPoint);
+		return temperaturePoints;
+	}
+	
+	private List<MeteoPoint> covertToTemperaturePoints(double[] latitude, double[] longitude, double[] temperature, int len) {
+		List<MeteoPoint> temperaturePoints = new ArrayList<MeteoPoint>();
+		for(int i = 0; i < len; i++) {
+			MeteoPoint meteo = new MeteoPoint();
+			meteo.setLatitude(latitude[i]);
+			meteo.setLongitude(longitude[i]);
+			meteo.setTemperature(temperature[i]);
+			temperaturePoints.add(meteo);
+		}
+		return temperaturePoints;
+	}
+
+	private int addCornerPoint(double lat, double lon, double[] xt1, double[] xt2, double[] y, int index){
+		double t1 = getTemperatureForPoint(lat, lon);
+		if (t1!=-300) {
+			xt1[index] = lat;
+			xt2[index] = lon;
+			y[index] = t1;
+			index++;
+		} else {
+			System.out.println("The temperature is invalid!.");
+		}
+		return index;
+	}
+	
+	
+	private double getTemperatureForPoint(Double lat, Double lon) {
+		MeteoPoint point = ForecastServiceHelper.getDataForPoint(new GeoTimePoint(lat, lon, timeTo));
+		if (point != null && point.getTemperature() != -300.0) {
+			return point.getTemperature();
+		} else return -300;
+	}
+
 	private Double[] getMaxMinBorders() {
 		Double[] minMaxBorders = new Double[4];
 		minMaxBorders[0] = areaPoints.get(0).getLatitude();

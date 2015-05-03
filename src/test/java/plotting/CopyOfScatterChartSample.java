@@ -35,7 +35,7 @@ public class CopyOfScatterChartSample extends Application {
 		
         stage.setTitle("Scatter Chart Sample");
         final NumberAxis xAxis = new NumberAxis(13, 17, 0.1);
-        final NumberAxis yAxis = new NumberAxis(44, 48, 0.1);        
+        final NumberAxis yAxis = new NumberAxis(45.3, 46.7, 0.1);        
         final ScatterChart<Number,Number> sc = new
             ScatterChart<Number,Number>(xAxis,yAxis);
         xAxis.setLabel("Longitude");                
