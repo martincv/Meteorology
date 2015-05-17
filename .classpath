@@ -35,5 +35,6 @@
 	<classpathentry kind="lib" path="C:/Users/MartinC/R/win-library/3.1/rJava/jri/JRI.jar"/>
 	<classpathentry kind="lib" path="C:/Users/MartinC/R/win-library/3.1/rJava/jri/JRIEngine.jar"/>
 	<classpathentry kind="lib" path="C:/Users/MartinC/R/win-library/3.1/rJava/jri/REngine.jar"/>
+	<classpathentry kind="lib" path="C:/Users/MartinC/Desktop/javaGD.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -2,6 +2,7 @@ package core;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -19,6 +20,7 @@ import org.rosuda.JRI.Rengine;
 import clustering.KMeansClustering;
 
 import com.google.common.primitives.Doubles;
+import comparator.MeteoPointTemperatureComparator;
 
 import dao.SearchQueryDAO;
 import distribution.ProbabilityDistribution;
@@ -46,9 +48,56 @@ public class MeteoService {
 //		saveQueryToDatabase(meteoPoints);
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
 		List<List<MeteoPoint>> clusters = locateExtremePoints(meteoPoints);
-		return clusters;
+		List<List<MeteoPoint>> mostExtremeClusters = findExtremeClusters(clusters);
+		return mostExtremeClusters;
 	}
 	
+	private List<List<MeteoPoint>> findExtremeClusters(List<List<MeteoPoint>> clusters) {
+		List<List<MeteoPoint>> extremeClusters = new ArrayList<List<MeteoPoint>>(2);
+		
+		boolean init = false;
+		double min = -1, max = -1;
+		int minInd = -1, maxInd = -1;
+		
+		for (int i = 0; i < clusters.size(); i++) {
+			List<MeteoPoint> cluster = clusters.get(i);
+			double median;
+			int len = cluster.size();
+			Collections.sort(cluster, new MeteoPointTemperatureComparator());
+			int mid = len / 2;
+			if (len % 2 == 0) {
+				median = (cluster.get(mid).getTemperature() + cluster.get(mid -1).getTemperature()) / 2.0;
+			} else {
+				median = cluster.get(mid).getTemperature();
+			}
+			if (init) {
+				if (median < min) {
+					min = median;
+					minInd = i;
+				} 
+				if (median > max) {
+					max = median;
+					maxInd = i;
+				}
+			} else {
+				min = median; minInd = i;
+				max = median; maxInd = i;
+				init = true;
+			}
+			System.out.println(i + " " + median);
+		}
+		
+		System.out.println("Min= " + minInd + " " + min);
+		System.out.println("Max= " + maxInd + " " + max);
+		extremeClusters.add(clusters.get(minInd));
+		extremeClusters.add(clusters.get(maxInd));
+		System.out.println(extremeClusters.get(0).size());
+		System.out.println(extremeClusters.get(1).size());
+		System.out.println(extremeClusters.size());
+		return extremeClusters;
+		
+	}
+
 	private List<MeteoPoint> concatenate(List<MeteoPoint> meteoPoints,
 			List<MeteoPoint> previousPoints) {
 		Set<MeteoPoint> set = new HashSet<MeteoPoint>(meteoPoints);

@@ -83,8 +83,8 @@ public class KMeansClustering {
 	    
 	    double minValidity = Double.MAX_VALUE;
 	    int bestNumberOfClusters = 0;
-//	    for (int k=2; k < Math.ceil(Math.sqrt(N)); k++) {
-	    for (int k=2; k <= N / 2; k++) {
+	    for (int k=2; k < Math.ceil(Math.sqrt(N)); k++) {
+//	    for (int k=2; k <= N / 2; k++) {
 	    	double validity;
 	    	
 		    // create the model 
