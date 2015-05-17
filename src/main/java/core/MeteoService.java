@@ -85,16 +85,17 @@ public class MeteoService {
 		Double[] minMaxBorders = getMaxMinBorders();
 		ProbabilityDistribution pdis = new ProbabilityDistribution();
 		List<List<Double>> possiblePoints = pdis.getAllPossiblePoints(minMaxBorders[0],
-				minMaxBorders[1], 
-				minMaxBorders[2],
-				minMaxBorders[3], numberOfPossiblePoints);
+				minMaxBorders[1], minMaxBorders[2], minMaxBorders[3], numberOfPossiblePoints,
+				timeFrom, timeTo);
 		
 		numberOfPossiblePoints = possiblePoints.get(0).size();
 		double[] x1 = Doubles.toArray(possiblePoints.get(0));
 		double[] x2 = Doubles.toArray(possiblePoints.get(1));
+		double[] x3 = Doubles.toArray(possiblePoints.get(2));
 		
 		double[] xt1 = new double[NUMBER_OF_POINTS_TO_TEST];
 		double[] xt2 = new double[NUMBER_OF_POINTS_TO_TEST];
+		double[] xt3 = new double[NUMBER_OF_POINTS_TO_TEST];
 		double[] y = new double[NUMBER_OF_POINTS_TO_TEST];
 		
 		
@@ -102,17 +103,22 @@ public class MeteoService {
 		int i = 0;
 		
 		//Add the four corner points
-		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], xt1, xt2, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], xt1, xt2, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], xt1, xt2, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], xt1, xt2, y, currentPoint);
-		i+=4;
+		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], timeFrom, xt1, xt2, xt3, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], timeFrom, xt1, xt2, xt3, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], timeFrom, xt1, xt2, xt3, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], timeFrom, xt1, xt2, xt3, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], timeTo, xt1, xt2, xt3, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], timeTo, xt1, xt2, xt3, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], timeTo, xt1, xt2, xt3, y, currentPoint);
+		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], timeTo, xt1, xt2, xt3, y, currentPoint);
+		i+=8;
 		
-		//Add 36 more random points
+		//Add 32 more random points
 		Random rd = new Random();
 		for (; i < 40; i++) {
 			int nextPointIndex = rd.nextInt(numberOfPossiblePoints);
-			currentPoint = addCornerPoint(x1[nextPointIndex], x2[nextPointIndex], xt1, xt2, y, currentPoint);
+			currentPoint = addCornerPoint(x1[nextPointIndex], x2[nextPointIndex], (long) x3[nextPointIndex],
+										  xt1, xt2, xt3, y, currentPoint);
 		}
 		
 		//Pick other points using R' loess
@@ -126,38 +132,47 @@ public class MeteoService {
 		re.assign("currentPoint", new int[] {currentPoint});
 		re.assign("x1", x1);
 		re.assign("x2", x2);
+		re.assign("x3", x3);
 		re.assign("xt1", xt1);
 		re.eval("xt1 = xt1[1:currentPoint]");
 		re.assign("xt2", xt2);
 		re.eval("xt2 = xt2[1:currentPoint]");
+		re.assign("xt3", xt3);
+		re.eval("xt3 = xt3[1:currentPoint]");
 		re.assign("y", y);
 		re.eval("y = y[1:currentPoint]");
 		re.eval("span = 0.5") ;
 		
-		System.out.println(re.eval("x1"));
-		System.out.println(re.eval("x2"));
-		System.out.println(re.eval("xt1"));
-		System.out.println(re.eval("xt2"));
+//		System.out.println(re.eval("x1"));
+//		System.out.println(re.eval("x2"));
+//		System.out.println(re.eval("x3"));
+//		System.out.println(re.eval("xt1"));
+//		System.out.println(re.eval("xt2"));
+//		System.out.println(re.eval("xt3"));
 
 		int initialValues = currentPoint;
 		for (; i < NUMBER_OF_POINTS_TO_TEST;i++) {
 			re.assign("i", new int[] {currentPoint - initialValues});
 			System.out.println("i = " + re.eval("i").asInt());
-			re.eval("fit <- (loess(y ~ xt1 + xt2, span = span - 0.4* i/100))");
-			re.eval("p <- predict(fit, data.frame(xt1, xt2), se = T)");
+			re.eval("fit <- (loess(y ~ xt1 + xt2 + xt3, span = span - 0.4* i/100))");
+			re.eval("p <- predict(fit, data.frame(x1, x2, x3), se = T)");
 			System.out.println("Probabilities = " + re.eval("p$se"));
 			re.eval("x1.next <- x1[p$se == max(p$se)]");
 			re.eval("rind = sample(1:length(x1.next), 1)");
-			System.out.println(re.eval("rind").asInt());
+			//System.out.println(re.eval("rind").asInt());
 			re.eval("x1.next = x1.next[rind]");
 			re.eval("x2.next <- x2[p$se == max(p$se)]");
 			re.eval("x2.next = x2.next[rind]");
+			re.eval("x3.next <- x3[p$se == max(p$se)]");
+			re.eval("x3.next = x3.next[rind]");
 			
 			double x1next = re.eval("x1.next").asDouble();
 			double x2next = re.eval("x2.next").asDouble();
+			double x3next = re.eval("x3.next").asDouble();
 			System.out.println("x1next = " + x1next);
 			System.out.println("x2next = " + x2next);
-			double tnext = getTemperatureForPoint(x1next, x2next);
+			System.out.println("x3next = " + x3next);
+			double tnext = getTemperatureForPoint(x1next, x2next, (long) x3next);
 			if (tnext == -300) {
 				continue;
 			}
@@ -166,36 +181,42 @@ public class MeteoService {
 			re.eval("y <- c(y, tnext)");
 			re.eval("xt1 <- c(xt1, x1.next)");
 			re.eval("xt2 <- c(xt2, x2.next)");
+			re.eval("xt3 <- c(xt3, x3.next)");
 			System.out.println(re.eval("xt1"));
 			System.out.println(re.eval("xt2"));
+			System.out.println(re.eval("xt3"));
 			System.out.println(re.eval("y"));
 		}
 		
 		
 		xt1 = re.eval("xt1").asDoubleArray();
 		xt2 = re.eval("xt2").asDoubleArray();
+		xt3 = re.eval("xt3").asDoubleArray();
 		y = re.eval("y").asDoubleArray();
-		List<MeteoPoint> temperaturePoints = covertToTemperaturePoints(xt1,xt2,y, currentPoint);
+		List<MeteoPoint> temperaturePoints = covertToTemperaturePoints(xt1, xt2, xt3, y, currentPoint);
 		return temperaturePoints;
 	}
 	
-	private List<MeteoPoint> covertToTemperaturePoints(double[] latitude, double[] longitude, double[] temperature, int len) {
+	private List<MeteoPoint> covertToTemperaturePoints(double[] latitude, double[] longitude, double[] time, 
+			double[] temperature, int len) {
 		List<MeteoPoint> temperaturePoints = new ArrayList<MeteoPoint>();
 		for(int i = 0; i < len; i++) {
 			MeteoPoint meteo = new MeteoPoint();
 			meteo.setLatitude(latitude[i]);
 			meteo.setLongitude(longitude[i]);
+			meteo.setTime((long) time[i]);
 			meteo.setTemperature(temperature[i]);
 			temperaturePoints.add(meteo);
 		}
 		return temperaturePoints;
 	}
 
-	private int addCornerPoint(double lat, double lon, double[] xt1, double[] xt2, double[] y, int index){
-		double t1 = getTemperatureForPoint(lat, lon);
+	private int addCornerPoint(double lat, double lon, long time, double[] xt1, double[] xt2, double[] xt3, double[] y, int index){
+		double t1 = getTemperatureForPoint(lat, lon, time);
 		if (t1!=-300) {
 			xt1[index] = lat;
 			xt2[index] = lon;
+			xt3[index] = time;
 			y[index] = t1;
 			index++;
 		} else {
@@ -205,8 +226,8 @@ public class MeteoService {
 	}
 	
 	
-	private double getTemperatureForPoint(Double lat, Double lon) {
-		MeteoPoint point = ForecastServiceHelper.getDataForPoint(new GeoTimePoint(lat, lon, timeTo));
+	private double getTemperatureForPoint(Double lat, Double lon, Long time) {
+		MeteoPoint point = ForecastServiceHelper.getDataForPoint(new GeoTimePoint(lat, lon, time));
 		if (point != null && point.getTemperature() != -300.0) {
 			return point.getTemperature();
 		} else return -300;

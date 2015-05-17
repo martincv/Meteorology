@@ -19,12 +19,14 @@ public class KMeansClustering {
 		// create instances
 	    Attribute attr1 = new Attribute("latitude");
 	    Attribute attr2 = new Attribute("longitude");
-	    Attribute attr3 = new Attribute("temperature");
+	    Attribute attr3 = new Attribute("time");
+	    Attribute attr4 = new Attribute("temperature");
 
 	    ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 	    attributes.add(attr1);
 	    attributes.add(attr2);
 	    attributes.add(attr3);
+	    attributes.add(attr4);
 
 
 	    // predict instance class values
@@ -35,6 +37,8 @@ public class KMeansClustering {
 	    double maxLat = meteoPoints.get(0).getLatitude();
 	    double minLon = meteoPoints.get(0).getLongitude();
 	    double maxLon = meteoPoints.get(0).getLongitude();
+	    double minTime = meteoPoints.get(0).getTime();
+	    double maxTime = meteoPoints.get(0).getTime();
 	    double minTemp = meteoPoints.get(0).getTemperature();
 	    double maxTemp = meteoPoints.get(0).getTemperature();
 	    for (MeteoPoint meteoPoint : meteoPoints) {
@@ -49,6 +53,12 @@ public class KMeansClustering {
 		    }
 		    if (meteoPoint.getLongitude() > maxLon) {
 		    	maxLon = meteoPoint.getLongitude();
+		    }
+		    if (meteoPoint.getTime() < minTime) {
+		    	minTime = meteoPoint.getTime();
+		    }
+		    if (meteoPoint.getTime() > maxTime) {
+		    	maxTime = meteoPoint.getTime();
 		    }
 		    if (meteoPoint.getTemperature() < minTemp) {
 		    	minTemp = meteoPoint.getTemperature();
@@ -65,7 +75,8 @@ public class KMeansClustering {
 		    double[] values = new double[testing.numAttributes()];
 		    values[0] = (meteoPoint.getLatitude() - minLat) / (maxLat - minLat);
 		    values[1] = (meteoPoint.getLongitude() - minLon) / (maxLon - minLon);
-		    values[2] = (meteoPoint.getTemperature() - minTemp) / (maxTemp - minTemp);
+		    values[2] = (meteoPoint.getTime() - minTime) / (maxTime - minTime);
+		    values[3] = (meteoPoint.getTemperature() - minTemp) / (maxTemp - minTemp);
 //		    System.out.println(values);
 		    testing.add(new DenseInstance(1.0, values));
 	    }
@@ -85,13 +96,15 @@ public class KMeansClustering {
 		    Instances centroids = kMeans.getClusterCentroids(); 
 		    double inter = Math.sqrt(Math.pow(centroids.instance(0).value(0) - centroids.instance(1).value(0), 2)
 		    		  + Math.pow(centroids.instance(0).value(1) - centroids.instance(1).value(1), 2)
-		    		  + Math.pow(centroids.instance(0).value(2) - centroids.instance(1).value(2), 2));
+		    		  + Math.pow(centroids.instance(0).value(2) - centroids.instance(1).value(2), 2)
+		    		  + Math.pow(centroids.instance(0).value(3) - centroids.instance(1).value(3), 2));
 		    int numCentroids = centroids.numInstances();
 		    for (int i = 0; i < numCentroids - 1; i++) { 
 		    	for (int j = i + 1; j < numCentroids; j++){
 		    		double newInter = Math.sqrt(Math.pow(centroids.instance(i).value(0) - centroids.instance(j).value(0), 2)
 				    		  + Math.pow(centroids.instance(i).value(1) - centroids.instance(j).value(1), 2)
-				    		  + Math.pow(centroids.instance(i).value(2) - centroids.instance(j).value(2), 2));
+				    		  + Math.pow(centroids.instance(i).value(2) - centroids.instance(j).value(2), 2)
+				    		  + Math.pow(centroids.instance(i).value(3) - centroids.instance(j).value(3), 2));
 		    		if (newInter < inter) {
 		    			inter = newInter;
 		    		}
@@ -107,7 +120,8 @@ public class KMeansClustering {
 		      Instance cluster = centroids.instance(clusterNumber);
 		      intra += Math.sqrt(Math.pow(cluster.value(0) - point.value(0), 2)
 		    		  + Math.pow(cluster.value(1) - point.value(1), 2)
-		    		  + Math.pow(cluster.value(2) - point.value(2), 2));
+		    		  + Math.pow(cluster.value(2) - point.value(2), 2)
+		    		  + Math.pow(cluster.value(3) - point.value(3), 2));
 		    }
 		    intra /= N;
 		    
