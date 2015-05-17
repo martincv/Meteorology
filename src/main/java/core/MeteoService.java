@@ -20,8 +20,8 @@ import org.rosuda.JRI.Rengine;
 import clustering.KMeansClustering;
 
 import com.google.common.primitives.Doubles;
-import comparator.MeteoPointTemperatureComparator;
 
+import comparator.MeteoPointTemperatureComparator;
 import dao.SearchQueryDAO;
 import distribution.ProbabilityDistribution;
 
@@ -32,6 +32,7 @@ public class MeteoService {
 	private List<GeoPoint> areaPoints = new ArrayList<GeoPoint>();
 	private long timeFrom;
 	private long timeTo;
+	private Rengine re;
 
 	
 	public MeteoService(double[] areaPoints, String timeFrom, String timeTo) {
@@ -49,9 +50,69 @@ public class MeteoService {
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
 		List<List<MeteoPoint>> clusters = locateExtremePoints(meteoPoints);
 		List<List<MeteoPoint>> mostExtremeClusters = findExtremeClusters(clusters);
+		List<ArrayList<GeoTimePoint>>hulls = runConvexHullAndCreateOpenGLGraphics(mostExtremeClusters);
 		return mostExtremeClusters;
 	}
 	
+	private List<ArrayList<GeoTimePoint>> runConvexHullAndCreateOpenGLGraphics(
+			List<List<MeteoPoint>> mostExtremeClusters) throws Exception {
+		System.out.println("ovdeka");
+//		String[] Rargs = {"--vanilla"};
+//		Rengine re = new Rengine(Rargs, false, null);	
+//		if (!re.waitForR()) {
+//			System.out.println("Cannot load R");
+//			throw new Exception("Can not load R.");
+//		}
+		re.eval("library(grDevices)");
+		re.eval("library(rgl)");
+		re.eval("library(MASS)");
+		
+		List<MeteoPoint> minCluster = mostExtremeClusters.get(0);
+		List<MeteoPoint> maxCluster = mostExtremeClusters.get(1);
+		
+
+		re.assign("iter", new int[] {minCluster.size()});
+		re.eval("mat = matrix(NA, nrow=iter, ncol=3)");
+		System.out.println("ovdeka");
+		for (int i = 0; i < minCluster.size(); i++) {
+		  re.assign("n", new int[] {i + 1});
+		  re.assign("x1", new double[] {minCluster.get(i).getLongitude()});
+		  re.assign("x2", new double[] {minCluster.get(i).getLatitude()});
+		  re.assign("x3", new double[] {minCluster.get(i).getTime()});
+		  re.eval("mat[n,] <- c(x1, x2, x3)");
+//		  System.out.println(re.eval("mat[n,]"));
+//		  System.out.println(minCluster.get(i).getLongitude() + " " + minCluster.get(i).getLatitude() + " " + minCluster.get(i).getTime());
+		}
+//		System.out.println(re.eval("mat"));
+		
+//		plot3d(x) # space and time
+//		plot(x[,1], x[,2]) # just in spatial coordinates
+
+
+		re.eval("plot(mat[,1], mat[,2])");
+		re.eval("ch <- chull(mat[,c(1,2)])");
+		re.eval("polygon(mat[ch,1], mat[ch,2])");
+//		re.eval("dev.copy(jpeg,filename='plot.jpg');");
+//		re.eval("dev.off();");
+
+		re.eval("open3d()");
+		System.out.println("trojka:" + re.eval("mat[,3]"));
+		System.out.println("max=" + re.eval("max(mat[,3])"));
+		System.out.println("min=" + re.eval("min(mat[,3])"));
+		re.eval("diff = max(mat[,3]) - min(mat[,3])");
+		System.out.println(re.eval("diff"));
+//		re.eval("shade3d( extrude3d(mat[ch,1], mat[ch,2], thickness = max(mat[,3]) - min(mat[,3])), col = 'blue' ,alpha = 0.1)");
+//		re.eval("shade3d( extrude3d(mat[ch,1], mat[ch,2], thickness = 3.0, col = 'blue' ,alpha = 0.1)");
+		re.eval("time = ((mat[,3] - min(mat[,3])) * 3.0)/diff");
+		re.eval("points3d(mat[,1], mat[,2], time");
+		System.out.println("long=" + re.eval("mat[,1]"));
+		System.out.println("lat=" + re.eval("mat[,2]"));
+		System.out.println("time=" + re.eval("time"));
+		re.eval("writeWebGL()");
+
+		return null;
+	}
+
 	private List<List<MeteoPoint>> findExtremeClusters(List<List<MeteoPoint>> clusters) {
 		List<List<MeteoPoint>> extremeClusters = new ArrayList<List<MeteoPoint>>(2);
 		
@@ -172,7 +233,7 @@ public class MeteoService {
 		
 		//Pick other points using R' loess
 		String[] Rargs = {"--vanilla"};
-		Rengine re = new Rengine(Rargs, false, null);	
+		re = new Rengine(Rargs, false, null);	
 		if (!re.waitForR()) {
 			System.out.println("Cannot load R");
 			throw new Exception("Can not load R.");

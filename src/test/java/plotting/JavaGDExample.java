@@ -44,9 +44,13 @@ public class JavaGDExample extends GDInterface implements WindowListener {
         //Rengine engine = new Rengine(new String[] {"--vanilla"}, true, null);       
 //        engine.eval(".setenv <- if (exists(\"Sys.setenv\")) Sys.setenv else Sys.putenv");
 //        engine.eval(".setenv(\"JAVAGD_CLASS_NAME\"=\"JavaGDExample\")");
-        engine.eval("library(JavaGD)");
+		engine.eval("library(grDevices)");
+	    engine.eval("library(rgl)");
+		engine.eval("library(MASS)");
+	    engine.eval("library(JavaGD)");
         engine.eval("JavaGD()");
-        engine.eval("plot(rnorm(100))");        
+        engine.eval("x = mvrnorm(n, rep(0,3),Sigma)");
+        engine.eval("plot3d(x)");        
     }
     
     /** listener response to "Close" - effectively invokes <code>dev.off()</code> on the device */
