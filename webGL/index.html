@@ -9,6 +9,35 @@
         <img src="snapshot.png" alt="snapshot" width=257/><br>
 	Your browser does not support the HTML5 canvas element.</canvas>
 
+	<!-- ****** points object 7 ****** -->
+	<script id="vshader7" type="x-shader/x-vertex">
+	attribute vec3 aPos;
+	attribute vec4 aCol;
+	uniform mat4 mvMatrix;
+	uniform mat4 prMatrix;
+	varying vec4 vCol;
+	varying vec4 vPosition;
+	void main(void) {
+	  vPosition = mvMatrix * vec4(aPos, 1.);
+	  gl_Position = prMatrix * vPosition;
+	  gl_PointSize = 3.;
+	  vCol = aCol;
+	}
+	</script>
+
+	<script id="fshader7" type="x-shader/x-fragment"> 
+	#ifdef GL_ES
+	precision highp float;
+	#endif
+	varying vec4 vCol; // carries alpha
+	varying vec4 vPosition;
+	void main(void) {
+      vec4 colDiff = vCol;
+	  vec4 lighteffect = colDiff;
+	  gl_FragColor = lighteffect;
+	}
+	</script> 
+
 
 	<script type="text/javascript">
 
@@ -195,7 +224,7 @@
 	    0, 0, 0, 1
 		]);
 	   this.clipplanes[1] = [];
-	   this.opaque[1] = [];
+	   this.opaque[1] = [7];
 	   this.transparent[1] = [];
 	   this.subscenes[1] = [];
 
@@ -239,6 +268,93 @@
 	     image.src = filename;
 	   }  	   
 
+
+	   // ****** points object 7 ******
+	   this.flags[7] = 0;
+	   this.prog[7]  = gl.createProgram();
+	   gl.attachShader(this.prog[7], this.getShader( gl, "vshader7" ));
+	   gl.attachShader(this.prog[7], this.getShader( gl, "fshader7" ));
+	   //  Force aPos to location 0, aCol to location 1 
+	   gl.bindAttribLocation(this.prog[7], 0, "aPos");
+	   gl.bindAttribLocation(this.prog[7], 1, "aCol");
+	   gl.linkProgram(this.prog[7]);
+	   this.offsets[7]={vofs:0, cofs:-1, nofs:-1, radofs:-1, oofs:-1, tofs:-1, stride:3};
+	   var v=new Float32Array([
+	    16.11024, 45.9665, 0.6021897,
+	    15.77245, 46.0791, 0.6843065,
+	    15.79122, 46.04156, 0.5967153,
+	    15.54726, 45.76008, 0.6733576,
+	    15.22824, 46.06033, 0.5200729,
+	    16.35419, 45.49736, 3,
+	    16.05394, 46.04156, 0.3503649,
+	    15.65986, 46.00403, 2.895985,
+	    16.07271, 45.85391, 0.4872262,
+	    15.11565, 45.94773, 0.4872262,
+	    15.26578, 45.74131, 2.895985,
+	    15.54726, 45.66625, 0.7718977,
+	    15.5285, 46.04156, 0.7499999,
+	    16.14777, 45.89144, 2.879562,
+	    15.77245, 45.60995, 0.1642336,
+	    15.92258, 46.1354, 0,
+	    15.32207, 45.91021, 0.229927,
+	    15.75369, 45.53489, 2.885036,
+	    16.35419, 45.70378, 0.4051094,
+	    15.00305, 45.66625, 0.7335766,
+	    16.16654, 46.00403, 0.07664233,
+	    15.37837, 46.0228, 1.018248,
+	    15.80999, 45.53489, 2.677007,
+	    15.84752, 46.06033, 2.786496,
+	    15.24701, 45.91021, 0,
+	    16.05394, 45.89144, 0.1259124,
+	    15.5285, 45.98527, 0.120438,
+	    15.73492, 45.72255, 1.012774,
+	    16.26036, 46.0791, 0.4708028,
+	    15.20948, 45.76008, 2.594891,
+	    15.28454, 45.89144, 0.9963503,
+	    15.96011, 45.66625, 0.4379561,
+	    16.41049, 45.51612, 0.6952554,
+	    16.09147, 45.49736, 0.6788321,
+	    16.01641, 45.66625, 2.649635,
+	    15.22824, 45.91021, 0.6569343,
+	    16.14777, 46.22923, 1.122263,
+	    16.26036, 46.19169, 1.122263,
+	    15.60356, 45.60995, 0.4105839,
+	    15.82875, 46.1354, 2.605839,
+	    16.09147, 45.85391, 2.567518,
+	    15.22824, 46.06033, 1.155109,
+	    16.27913, 45.87267, 2.567518,
+	    15.88505, 45.68501, 2.436131,
+	    16.20407, 45.72255, 0.9251824,
+	    15.77245, 46.1354, 1.160584,
+	    15.69739, 45.81638, 0.8211678,
+	    16.20407, 45.83514, 2.310219,
+	    15.75369, 45.72255, 1.417883,
+	    16.35419, 45.77884, 0.8813868,
+	    15.90381, 45.91021, 2.184307,
+	    15.65986, 46.09786, 1.335766,
+	    16.22283, 46.0228, 2.244525,
+	    16.12901, 46.09786, 1.231752,
+	    16.37296, 45.60995, 2.091241,
+	    16.37296, 46.04156, 1.899635,
+	    15.71616, 45.76008, 1.861314,
+	    15.4159, 45.98527, 1.625912,
+	    16.33543, 45.79761, 1.686131,
+	    15.4722, 45.91021, 2.10219,
+	    15.84752, 45.79761, 1.428832,
+	    15.39714, 45.76008, 1.992701,
+	    15.84752, 45.94773, 1.894161,
+	    15.90381, 45.85391, 1.998175,
+	    16.26036, 45.91021, 1.877737,
+	    16.27913, 45.59119, 1.45073,
+	    16.1853, 45.83514, 1.976277
+	   ]);
+	   this.values[7] = v;
+	   this.buf[7] = gl.createBuffer();
+	   gl.bindBuffer(gl.ARRAY_BUFFER, this.buf[7]);
+	   gl.bufferData(gl.ARRAY_BUFFER, this.values[7], gl.STATIC_DRAW);
+	   this.mvMatLoc[7] = gl.getUniformLocation(this.prog[7],"mvMatrix");
+	   this.prMatLoc[7] = gl.getUniformLocation(this.prog[7],"prMatrix");
+
 	   gl.enable(gl.DEPTH_TEST);
 	   gl.depthFunc(gl.LEQUAL);
 	   gl.clearDepth(1.0);
@@ -254,6 +370,22 @@
 	   }
 
 
+       // ****** points object 7 *******
+       this.drawFns[7] = function(id, clipplanes) {
+	     gl.useProgram(this.prog[id]);
+	     gl.bindBuffer(gl.ARRAY_BUFFER, this.buf[id]);
+	     gl.uniformMatrix4fv( this.prMatLoc[id], false, new Float32Array(this.prMatrix.getAsArray()) );
+	     gl.uniformMatrix4fv( this.mvMatLoc[id], false, new Float32Array(this.mvMatrix.getAsArray()) );
+	     var clipcheck = 0;
+	     for (var i=0; i < clipplanes.length; i++)
+	       clipcheck = this.clipFns[clipplanes[i]].call(this, clipplanes[i], id, clipcheck);
+	     gl.enableVertexAttribArray( posLoc );
+	     gl.disableVertexAttribArray( colLoc );
+	     gl.vertexAttrib4f( colLoc, 0, 0, 0, 1 );
+	     gl.vertexAttribPointer(posLoc,  3, gl.FLOAT, false, 4*this.offsets[id]["stride"],  4*this.offsets[id]["vofs"]);
+	     gl.drawArrays(gl.POINTS, 0, 67);
+       }
+
        // ***** subscene 1 ****
        this.drawFns[1] = function(id) {
 	     this.vp = this.viewport[id];
@@ -261,6 +393,28 @@
 	     gl.scissor(this.vp[0], this.vp[1], this.vp[2], this.vp[3]);
 	     gl.clearColor(1, 1, 1, 1);
 	     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	     this.prMatrix.makeIdentity();
+	     var radius = 1.866479;
+	     var distance = 6.55593;
+	     var t = tan(this.FOV[1]*PI/360);
+	     var near = distance - radius;
+	     var far = distance + radius;
+	     var hlen = t*near;
+	     var aspect = this.vp[2]/this.vp[3];
+	     var z = this.zoom[1];
+	     if (aspect > 1) 
+	       this.prMatrix.frustum(-hlen*aspect*z, hlen*aspect*z, 
+	                        -hlen*z, hlen*z, near, far);
+	     else  
+	       this.prMatrix.frustum(-hlen*z, hlen*z, 
+	                        -hlen*z/aspect, hlen*z/aspect, 
+	                        near, far);
+
+         this.mvMatrix.makeIdentity();
+	     this.mvMatrix.translate( -15.70677, -45.86329, -1.5 );
+	     this.mvMatrix.scale( 1, 1, 1 );   
+	     this.mvMatrix.multRight( rgl.userMatrix[1] );
+         this.mvMatrix.translate(-0, -0, -6.55593);
 	     var clipids = this.clipplanes[id];
 	     if (clipids.length > 0) {
 	       this.invMatrix = new CanvasMatrix4(this.mvMatrix);

@@ -28,7 +28,7 @@ import distribution.ProbabilityDistribution;
 public class MeteoService {
 	
 	private static final int NUMBER_OF_POSSIBLE_POINTS = 10000;
-	private static final int NUMBER_OF_POINTS_TO_TEST = 100;
+	private static final int NUMBER_OF_POINTS_TO_TEST = 500;
 	private List<GeoPoint> areaPoints = new ArrayList<GeoPoint>();
 	private long timeFrom;
 	private long timeTo;
@@ -104,7 +104,7 @@ public class MeteoService {
 //		re.eval("shade3d( extrude3d(mat[ch,1], mat[ch,2], thickness = max(mat[,3]) - min(mat[,3])), col = 'blue' ,alpha = 0.1)");
 //		re.eval("shade3d( extrude3d(mat[ch,1], mat[ch,2], thickness = 3.0, col = 'blue' ,alpha = 0.1)");
 		re.eval("time = ((mat[,3] - min(mat[,3])) * 3.0)/diff");
-		re.eval("points3d(mat[,1], mat[,2], time");
+		re.eval("points3d(mat[,1], mat[,2], time)");
 		System.out.println("long=" + re.eval("mat[,1]"));
 		System.out.println("lat=" + re.eval("mat[,2]"));
 		System.out.println("time=" + re.eval("time"));
@@ -225,10 +225,11 @@ public class MeteoService {
 		
 		//Add 32 more random points
 		Random rd = new Random();
-		for (; i < 40; i++) {
+		for (; i < 100; i++) {
 			int nextPointIndex = rd.nextInt(numberOfPossiblePoints);
 			currentPoint = addCornerPoint(x1[nextPointIndex], x2[nextPointIndex], (long) x3[nextPointIndex],
 										  xt1, xt2, xt3, y, currentPoint);
+			System.out.println(i);
 		}
 		
 		//Pick other points using R' loess
@@ -264,7 +265,7 @@ public class MeteoService {
 		for (; i < NUMBER_OF_POINTS_TO_TEST;i++) {
 			re.assign("i", new int[] {currentPoint - initialValues});
 			System.out.println("i = " + re.eval("i").asInt());
-			re.eval("fit <- (loess(y ~ xt1 + xt2 + xt3, span = span - 0.4* i/100))");
+			re.eval("fit <- (loess(y ~ xt1 + xt2 + xt3, span = span - 0.4* i/500))");
 			re.eval("p <- predict(fit, data.frame(x1, x2, x3), se = T)");
 			System.out.println("Probabilities = " + re.eval("p$se"));
 			re.eval("x1.next <- x1[p$se == max(p$se)]");
