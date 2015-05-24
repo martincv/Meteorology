@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 import plotting.LineChartWithHover.HoveredThresholdNode;
+import model.ClustersAndHulls;
 import model.MeteoPoint;
 import core.MeteoService;
 import de.erichseifert.gral.data.DataTable;
@@ -31,7 +32,7 @@ public class CopyOfScatterChartSample extends Application {
 		String timeTo = "2015-12-31T23:59:59+02";
 		
 		MeteoService service = new MeteoService(areaPoints, timeFrom, timeTo);
-		List<List<MeteoPoint>> clusters = service.findMostExtremePoints();
+		ClustersAndHulls clustersAndHulls = service.findMostExtremePoints();
 		
         stage.setTitle("Scatter Chart Sample");
         final NumberAxis xAxis = new NumberAxis(13, 17, 0.1);
@@ -42,6 +43,7 @@ public class CopyOfScatterChartSample extends Application {
         yAxis.setLabel("Latitude");
         sc.setTitle("Clustering points by temperature.");
         
+        List<List<MeteoPoint>> clusters = clustersAndHulls.getClusters();
         int numberOfClusters = clusters.size();
         Color[] colors =  new Color[numberOfClusters];
         Random rd = new Random();

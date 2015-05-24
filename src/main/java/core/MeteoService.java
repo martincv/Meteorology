@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import model.ClustersAndHulls;
+import model.ConvexHullAndTime;
 import model.GeoPoint;
 import model.GeoTimePoint;
 import model.MeteoPoint;
@@ -28,7 +30,7 @@ import distribution.ProbabilityDistribution;
 public class MeteoService {
 	
 	private static final int NUMBER_OF_POSSIBLE_POINTS = 10000;
-	private static final int NUMBER_OF_POINTS_TO_TEST = 500;
+	private static final int NUMBER_OF_POINTS_TO_TEST = 100;
 	private List<GeoPoint> areaPoints = new ArrayList<GeoPoint>();
 	private long timeFrom;
 	private long timeTo;
@@ -41,28 +43,25 @@ public class MeteoService {
 		this.timeTo = getSecondsPassedSince1970(timeTo);
 	}
 	
-	public List<List<MeteoPoint>> findMostExtremePoints() throws SQLException, Exception{
+	public ClustersAndHulls findMostExtremePoints() throws SQLException, Exception{
 		//List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
 		//List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
-		List<MeteoPoint> meteoPoints = getPointsAccordingToProbabilityDistribution();
 //		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
-//		saveQueryToDatabase(meteoPoints);
+		List<MeteoPoint> meteoPoints = getPointsAccordingToProbabilityDistribution();
+		saveQueryToDatabase(meteoPoints);
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
 		List<List<MeteoPoint>> clusters = locateExtremePoints(meteoPoints);
 		List<List<MeteoPoint>> mostExtremeClusters = findExtremeClusters(clusters);
-		List<ArrayList<GeoTimePoint>>hulls = runConvexHullAndCreateOpenGLGraphics(mostExtremeClusters);
-		return mostExtremeClusters;
+		List<ConvexHullAndTime> hulls = runConvexHullAndCreateOpenGLGraphics(mostExtremeClusters);
+		
+		ClustersAndHulls clustersAndHulls = new ClustersAndHulls(hulls, mostExtremeClusters);
+		return clustersAndHulls;
 	}
 	
-	private List<ArrayList<GeoTimePoint>> runConvexHullAndCreateOpenGLGraphics(
+	private List<ConvexHullAndTime> runConvexHullAndCreateOpenGLGraphics(
 			List<List<MeteoPoint>> mostExtremeClusters) throws Exception {
-		System.out.println("ovdeka");
-//		String[] Rargs = {"--vanilla"};
-//		Rengine re = new Rengine(Rargs, false, null);	
-//		if (!re.waitForR()) {
-//			System.out.println("Cannot load R");
-//			throw new Exception("Can not load R.");
-//		}
+		List<ConvexHullAndTime> hulls = new ArrayList<ConvexHullAndTime>();
+
 		re.eval("library(grDevices)");
 		re.eval("library(rgl)");
 		re.eval("library(MASS)");
@@ -71,46 +70,62 @@ public class MeteoService {
 		List<MeteoPoint> maxCluster = mostExtremeClusters.get(1);
 		
 
-		re.assign("iter", new int[] {minCluster.size()});
+		hulls.add(getConvexHullAndTimeForCluster(minCluster, "minCluster"));
+		hulls.add(getConvexHullAndTimeForCluster(maxCluster, "maxCluster"));
+		
+		return hulls;
+	}
+
+	private ConvexHullAndTime getConvexHullAndTimeForCluster(
+			List<MeteoPoint> cluster, String filename) {
+		re.assign("iter", new int[] {cluster.size()});
 		re.eval("mat = matrix(NA, nrow=iter, ncol=3)");
 		System.out.println("ovdeka");
-		for (int i = 0; i < minCluster.size(); i++) {
+		for (int i = 0; i < cluster.size(); i++) {
 		  re.assign("n", new int[] {i + 1});
-		  re.assign("x1", new double[] {minCluster.get(i).getLongitude()});
-		  re.assign("x2", new double[] {minCluster.get(i).getLatitude()});
-		  re.assign("x3", new double[] {minCluster.get(i).getTime()});
+		  re.assign("x1", new double[] {cluster.get(i).getLongitude()});
+		  re.assign("x2", new double[] {cluster.get(i).getLatitude()});
+		  re.assign("x3", new double[] {cluster.get(i).getTime()});
 		  re.eval("mat[n,] <- c(x1, x2, x3)");
-//		  System.out.println(re.eval("mat[n,]"));
-//		  System.out.println(minCluster.get(i).getLongitude() + " " + minCluster.get(i).getLatitude() + " " + minCluster.get(i).getTime());
 		}
-//		System.out.println(re.eval("mat"));
-		
-//		plot3d(x) # space and time
-//		plot(x[,1], x[,2]) # just in spatial coordinates
 
 
 		re.eval("plot(mat[,1], mat[,2])");
 		re.eval("ch <- chull(mat[,c(1,2)])");
 		re.eval("polygon(mat[ch,1], mat[ch,2])");
-//		re.eval("dev.copy(jpeg,filename='plot.jpg');");
-//		re.eval("dev.off();");
+		re.eval("dev.copy(jpeg,filename='" + filename + ".jpg');");
+		re.eval("dev.off();");
 
 		re.eval("open3d()");
-		System.out.println("trojka:" + re.eval("mat[,3]"));
-		System.out.println("max=" + re.eval("max(mat[,3])"));
-		System.out.println("min=" + re.eval("min(mat[,3])"));
-		re.eval("diff = max(mat[,3]) - min(mat[,3])");
-		System.out.println(re.eval("diff"));
-//		re.eval("shade3d( extrude3d(mat[ch,1], mat[ch,2], thickness = max(mat[,3]) - min(mat[,3])), col = 'blue' ,alpha = 0.1)");
-//		re.eval("shade3d( extrude3d(mat[ch,1], mat[ch,2], thickness = 3.0, col = 'blue' ,alpha = 0.1)");
-		re.eval("time = ((mat[,3] - min(mat[,3])) * 3.0)/diff");
+		re.eval("minTime = min(mat[,3])");
+		re.eval("maxTime = max(mat[,3])");
+		re.eval("diff = maxTime - minTime");
+		re.eval("hullLen = length(ch)");
+		re.eval("norm = max(max(mat[,1]) - min(mat[,1]),max(mat[,2]) - min(mat[,2]))");
+		System.out.println("norm=" + re.eval("norm").asDouble());
+		re.eval("time = ((mat[,3] - minTime) * norm)/diff");
 		re.eval("points3d(mat[,1], mat[,2], time)");
-		System.out.println("long=" + re.eval("mat[,1]"));
-		System.out.println("lat=" + re.eval("mat[,2]"));
-		System.out.println("time=" + re.eval("time"));
-		re.eval("writeWebGL()");
-
-		return null;
+		
+		
+		String draw3DPolygon = "for (i in 1:hullLen)\n"
+								+"{\n"
+								+"tmp = rbind(mat[ch[i],],mat[ch[i],])\n"
+								+"tmp[1,3] = norm\n"
+								+"tmp[2,3] = 0\n"
+								+"lines3d(tmp)\n"
+								+"}";
+		
+		re.eval(draw3DPolygon);
+		re.eval("polygon3d(mat[ch,1], mat[ch,2], rep(norm, hullLen),fill=FALSE)");
+		re.eval("polygon3d(mat[ch,1], mat[ch,2], rep(0, hullLen),fill=FALSE)");
+		re.eval("writeWebGL(dir = 'webGL', filename = file.path(paste0(getwd(),\"/webGL\"), '" + filename + ".html'))");
+		
+		double minTime = re.eval("minTime").asDouble();
+		double maxTime = re.eval("maxTime").asDouble();
+		double[][] hull = re.eval("mat[ch,1:2]").asDoubleMatrix();
+		
+		ConvexHullAndTime convexHullAndTime = new ConvexHullAndTime(hull, minTime, maxTime);
+		return convexHullAndTime;
 	}
 
 	private List<List<MeteoPoint>> findExtremeClusters(List<List<MeteoPoint>> clusters) {
@@ -225,7 +240,7 @@ public class MeteoService {
 		
 		//Add 32 more random points
 		Random rd = new Random();
-		for (; i < 100; i++) {
+		for (; i < 50; i++) {
 			int nextPointIndex = rd.nextInt(numberOfPossiblePoints);
 			currentPoint = addCornerPoint(x1[nextPointIndex], x2[nextPointIndex], (long) x3[nextPointIndex],
 										  xt1, xt2, xt3, y, currentPoint);
@@ -264,8 +279,9 @@ public class MeteoService {
 		int initialValues = currentPoint;
 		for (; i < NUMBER_OF_POINTS_TO_TEST;i++) {
 			re.assign("i", new int[] {currentPoint - initialValues});
+			re.assign("numPoints", new int[] {NUMBER_OF_POINTS_TO_TEST});
 			System.out.println("i = " + re.eval("i").asInt());
-			re.eval("fit <- (loess(y ~ xt1 + xt2 + xt3, span = span - 0.4* i/500))");
+			re.eval("fit <- (loess(y ~ xt1 + xt2 + xt3, span = span - 0.4* i/numPoints))");
 			re.eval("p <- predict(fit, data.frame(x1, x2, x3), se = T)");
 			System.out.println("Probabilities = " + re.eval("p$se"));
 			re.eval("x1.next <- x1[p$se == max(p$se)]");
@@ -317,6 +333,14 @@ public class MeteoService {
 			meteo.setLongitude(longitude[i]);
 			meteo.setTime((long) time[i]);
 			meteo.setTemperature(temperature[i]);
+			meteo.setHumidity(-1000.0);
+			meteo.setNearestStormDistance(-1000.0);
+			meteo.setPrecipAccumulation(-1000.0);
+			meteo.setPrecipIntensity(-1000.0);
+			meteo.setPrecipProbability(-1000.0);
+			meteo.setPrecipType("none");
+			meteo.setPressure(-1000.0);
+			meteo.setWindSpeed(-1000.0);
 			temperaturePoints.add(meteo);
 		}
 		return temperaturePoints;

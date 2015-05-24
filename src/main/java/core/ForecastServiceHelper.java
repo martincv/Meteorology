@@ -17,7 +17,7 @@ import com.github.dvdme.ForecastIOLib.ForecastIO;
 
 public class ForecastServiceHelper {
 	
-	final private static String API_ID = "005a2ad37eca5b349b66212ece84f8f5";
+	final private static String API_ID = "3b7da2be19497ca170e70829ffa73d1f";
 
 	
 	public static List<MeteoPoint> getForecastForGeoTimePoints(List<GeoTimePoint> geoPoints){
