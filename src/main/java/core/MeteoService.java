@@ -46,9 +46,9 @@ public class MeteoService {
 	public ClustersAndHulls findMostExtremePoints() throws SQLException, Exception{
 		//List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
 		//List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
-//		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
-		List<MeteoPoint> meteoPoints = getPointsAccordingToProbabilityDistribution();
-		saveQueryToDatabase(meteoPoints);
+		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
+		List<MeteoPoint> meteoPoints = getPointsAccordingToProbabilityDistribution(previousPoints);
+		saveQueryToDatabase(meteoPoints, previousPoints.size());
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
 		List<List<MeteoPoint>> clusters = locateExtremePoints(meteoPoints);
 		List<List<MeteoPoint>> mostExtremeClusters = findExtremeClusters(clusters);
@@ -205,7 +205,8 @@ public class MeteoService {
 	}
 	
 	
-	private List<MeteoPoint> getPointsAccordingToProbabilityDistribution() throws Exception {
+	private List<MeteoPoint> getPointsAccordingToProbabilityDistribution(List<MeteoPoint> previousPoints) throws Exception {
+		int numberOfPreviousPoints = previousPoints.size();
 		int numberOfPossiblePoints = NUMBER_OF_POSSIBLE_POINTS;
 		Double[] minMaxBorders = getMaxMinBorders();
 		ProbabilityDistribution pdis = new ProbabilityDistribution();
@@ -218,27 +219,29 @@ public class MeteoService {
 		double[] x2 = Doubles.toArray(possiblePoints.get(1));
 		double[] x3 = Doubles.toArray(possiblePoints.get(2));
 		
-		double[] xt1 = new double[NUMBER_OF_POINTS_TO_TEST];
-		double[] xt2 = new double[NUMBER_OF_POINTS_TO_TEST];
-		double[] xt3 = new double[NUMBER_OF_POINTS_TO_TEST];
-		double[] y = new double[NUMBER_OF_POINTS_TO_TEST];
+		double[] xt1 = new double[numberOfPreviousPoints + NUMBER_OF_POINTS_TO_TEST];
+		double[] xt2 = new double[numberOfPreviousPoints + NUMBER_OF_POINTS_TO_TEST];
+		double[] xt3 = new double[numberOfPreviousPoints + NUMBER_OF_POINTS_TO_TEST];
+		double[] y = new double[numberOfPreviousPoints + NUMBER_OF_POINTS_TO_TEST];
 		
-		
-		int currentPoint = 0;
+
+		convertPreviousPoints(previousPoints, xt1, xt2, xt3, y);
+		int currentPoint = numberOfPreviousPoints;
 		int i = 0;
 		
 		//Add the four corner points
-		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], timeFrom, xt1, xt2, xt3, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], timeFrom, xt1, xt2, xt3, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], timeFrom, xt1, xt2, xt3, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], timeFrom, xt1, xt2, xt3, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], timeTo, xt1, xt2, xt3, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], timeTo, xt1, xt2, xt3, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], timeTo, xt1, xt2, xt3, y, currentPoint);
-		currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], timeTo, xt1, xt2, xt3, y, currentPoint);
-		i+=8;
-		
-		//Add 32 more random points
+		if(numberOfPreviousPoints == 0) {
+			currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], timeFrom, xt1, xt2, xt3, y, currentPoint);
+			currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], timeFrom, xt1, xt2, xt3, y, currentPoint);
+			currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], timeFrom, xt1, xt2, xt3, y, currentPoint);
+			currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], timeFrom, xt1, xt2, xt3, y, currentPoint);
+			currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[2], timeTo, xt1, xt2, xt3, y, currentPoint);
+			currentPoint = addCornerPoint(minMaxBorders[0], minMaxBorders[3], timeTo, xt1, xt2, xt3, y, currentPoint);
+			currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[2], timeTo, xt1, xt2, xt3, y, currentPoint);
+			currentPoint = addCornerPoint(minMaxBorders[1], minMaxBorders[3], timeTo, xt1, xt2, xt3, y, currentPoint);
+			i+=8;
+		}
+		//Add random points
 		Random rd = new Random();
 		for (; i < 50; i++) {
 			int nextPointIndex = rd.nextInt(numberOfPossiblePoints);
@@ -281,6 +284,7 @@ public class MeteoService {
 			re.assign("i", new int[] {currentPoint - initialValues});
 			re.assign("numPoints", new int[] {NUMBER_OF_POINTS_TO_TEST});
 			System.out.println("i = " + re.eval("i").asInt());
+			System.out.println("currentPoint =" + currentPoint);
 			re.eval("fit <- (loess(y ~ xt1 + xt2 + xt3, span = span - 0.4* i/numPoints))");
 			re.eval("p <- predict(fit, data.frame(x1, x2, x3), se = T)");
 			System.out.println("Probabilities = " + re.eval("p$se"));
@@ -344,6 +348,16 @@ public class MeteoService {
 			temperaturePoints.add(meteo);
 		}
 		return temperaturePoints;
+	}
+	
+	private void convertPreviousPoints(List<MeteoPoint> previousPoints, double[] xt1, double[] xt2, double[] xt3, double[] y){
+		int len = previousPoints.size();
+		for (int i = 0; i < len; i++) {
+			xt1[i] = previousPoints.get(i).getLatitude();
+			xt2[i] = previousPoints.get(i).getLongitude();
+			xt3[i] = previousPoints.get(i).getTime();
+			y[i] = previousPoints.get(i).getTemperature();
+		}
 	}
 
 	private int addCornerPoint(double lat, double lon, long time, double[] xt1, double[] xt2, double[] xt3, double[] y, int index){
@@ -431,8 +445,8 @@ public class MeteoService {
 		
 	}
 
-	private void saveQueryToDatabase(List<MeteoPoint> meteoPoints) throws SQLException {
-		SearchQuery sq = new SearchQuery(areaPoints, meteoPoints, timeFrom, timeTo);
+	private void saveQueryToDatabase(List<MeteoPoint> meteoPoints, int numberOfPreviouslySavedPoints) throws SQLException {
+		SearchQuery sq = new SearchQuery(areaPoints, meteoPoints.subList(numberOfPreviouslySavedPoints, meteoPoints.size()), timeFrom, timeTo);
 		SearchQueryDAO search = new SearchQueryDAO();
 		search.insertNewQuery(sq);
 	}
