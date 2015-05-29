@@ -8,13 +8,13 @@ public class ProbabilityDistribution {
 
 	public List<List<Double>> getAllPossiblePoints(Double minLat, Double maxLat, Double minLong, Double maxLong,
 			Integer numberOfPossiblePoints, long timeFrom, long timeTo) {
-		double numberOfTimePoints = 1000.0;
+		double numberOfTimePoints = 900.0;
 		double a,b;
 		double len1 = Math.abs(minLat - maxLat);
 		double len2 = Math.abs(minLong - maxLong);
 
-		b = Math.sqrt(numberOfPossiblePoints * len2 / len1);
-		a = numberOfPossiblePoints / b;
+		b = Math.floor(Math.sqrt(numberOfPossiblePoints * len2 / len1));
+		a = Math.floor(numberOfPossiblePoints / b);
 
 		System.out.println("a="+ a+",b="+b);
 		double dx1 = len1 / a;

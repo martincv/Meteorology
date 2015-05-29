@@ -46,7 +46,8 @@ public class MeteoService {
 	public ClustersAndHulls findMostExtremePoints() throws SQLException, Exception{
 		//List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
 		//List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
-		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
+//		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
+		List<MeteoPoint> previousPoints = new ArrayList<MeteoPoint>();
 		List<MeteoPoint> meteoPoints = getPointsAccordingToProbabilityDistribution(previousPoints);
 		saveQueryToDatabase(meteoPoints, previousPoints.size());
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
@@ -215,9 +216,10 @@ public class MeteoService {
 				timeFrom, timeTo);
 		
 		numberOfPossiblePoints = possiblePoints.get(0).size();
-		double[] x1 = Doubles.toArray(possiblePoints.get(0));
-		double[] x2 = Doubles.toArray(possiblePoints.get(1));
-		double[] x3 = Doubles.toArray(possiblePoints.get(2));
+		System.out.println("The size of the array=" + possiblePoints.get(2).size());
+		double[] x1 = Doubles.toArray(possiblePoints.get(0));//latitude
+		double[] x2 = Doubles.toArray(possiblePoints.get(1));//longitude
+		double[] x3 = Doubles.toArray(possiblePoints.get(2));//tiem
 		
 		double[] xt1 = new double[numberOfPreviousPoints + NUMBER_OF_POINTS_TO_TEST];
 		double[] xt2 = new double[numberOfPreviousPoints + NUMBER_OF_POINTS_TO_TEST];
