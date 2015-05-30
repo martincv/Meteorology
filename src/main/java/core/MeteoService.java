@@ -46,8 +46,8 @@ public class MeteoService {
 	public ClustersAndHulls findMostExtremePoints() throws SQLException, Exception{
 		//List<GeoTimePoint> geoTimePoints = getRandomPointsWithinArea();
 		//List<MeteoPoint> meteoPoints = ForecastServiceHelper.getForecastForGeoTimePoints(geoTimePoints);
-//		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
-		List<MeteoPoint> previousPoints = new ArrayList<MeteoPoint>();
+		List<MeteoPoint> previousPoints = findPreviousPointsForSameRegionAndTime();
+//		List<MeteoPoint> previousPoints = new ArrayList<MeteoPoint>();
 		List<MeteoPoint> meteoPoints = getPointsAccordingToProbabilityDistribution(previousPoints);
 		saveQueryToDatabase(meteoPoints, previousPoints.size());
 //		meteoPoints = concatenate(meteoPoints, previousPoints);
@@ -90,39 +90,56 @@ public class MeteoService {
 		  re.eval("mat[n,] <- c(x1, x2, x3)");
 		}
 
-
-		re.eval("plot(mat[,1], mat[,2])");
+		re.assign("extremes", this.getMaxMinBorders());
+		re.eval("plot(c(extremes[3], extremes[4]), c(extremes[1], extremes[2]),"
+				+ "type = 'n', main = 'Region to explore', xlab='longitudes', "
+				+ "ylab='latitudes')");
+		re.eval("points(mat[,1], mat[,2])");
 		re.eval("ch <- chull(mat[,c(1,2)])");
 		re.eval("polygon(mat[ch,1], mat[ch,2])");
 		re.eval("dev.copy(jpeg,filename='" + filename + ".jpg');");
 		re.eval("dev.off();");
 
 		re.eval("open3d()");
-		re.eval("minTime = min(mat[,3])");
-		re.eval("maxTime = max(mat[,3])");
+//		re.eval("minTime = min(mat[,3])");
+//		re.eval("maxTime = max(mat[,3])");
+		re.assign("minTime", new double[]{this.timeFrom});
+		re.assign("maxTime", new double[]{this.timeTo});
 		re.eval("diff = maxTime - minTime");
+		System.out.println("minTime=" + re.eval("minTime").asDouble());
+		System.out.println("maxTime=" + re.eval("maxTime").asDouble());
+		System.out.println("diff=" + re.eval("diff").asDouble());
 		re.eval("hullLen = length(ch)");
 		re.eval("norm = max(max(mat[,1]) - min(mat[,1]),max(mat[,2]) - min(mat[,2]))");
 		System.out.println("norm=" + re.eval("norm").asDouble());
 		re.eval("time = ((mat[,3] - minTime) * norm)/diff");
 		re.eval("points3d(mat[,1], mat[,2], time)");
 		
-		
+		System.out.println("time=" + re.eval("time"));
 		String draw3DPolygon = "for (i in 1:hullLen)\n"
 								+"{\n"
 								+"tmp = rbind(mat[ch[i],],mat[ch[i],])\n"
-								+"tmp[1,3] = norm\n"
-								+"tmp[2,3] = 0\n"
+								+"tmp[1,3] = max(time)\n"
+								+"tmp[2,3] = min(time)\n"
 								+"lines3d(tmp)\n"
 								+"}";
 		
 		re.eval(draw3DPolygon);
-		re.eval("polygon3d(mat[ch,1], mat[ch,2], rep(norm, hullLen),fill=FALSE)");
-		re.eval("polygon3d(mat[ch,1], mat[ch,2], rep(0, hullLen),fill=FALSE)");
-		re.eval("writeWebGL(dir = 'webGL', filename = file.path(paste0(getwd(),\"/webGL\"), '" + filename + ".html'))");
+		re.eval("polygon3d(mat[ch,1], mat[ch,2], rep(max(time), hullLen),fill=FALSE)");
+		re.eval("polygon3d(mat[ch,1], mat[ch,2], rep(min(time), hullLen),fill=FALSE)");
 		
-		double minTime = re.eval("minTime").asDouble();
-		double maxTime = re.eval("maxTime").asDouble();
+		
+		re.eval("lines3d(c(extremes[3], extremes[3]),c(extremes[1], extremes[1]),c(0,norm),color='blue')");
+		re.eval("lines3d(c(extremes[3], extremes[3]),c(extremes[2], extremes[2]),c(0,norm),color='blue')");
+		re.eval("lines3d(c(extremes[4], extremes[4]),c(extremes[1], extremes[1]),c(0,norm),color='blue')");
+		re.eval("lines3d(c(extremes[4], extremes[4]),c(extremes[2], extremes[2]),c(0,norm),color='blue')");
+		re.eval("polygon3d(c(extremes[3], extremes[4],extremes[4], extremes[3]),c(extremes[1], extremes[1],extremes[2], extremes[2]),"
+				+ "rep(norm, 4),fill=FALSE,color='blue')");
+		re.eval("polygon3d(c(extremes[3], extremes[4],extremes[4], extremes[3]), c(extremes[1], extremes[1],extremes[2], extremes[2]),"
+			    + "rep(0, 4),fill=FALSE,color='blue')");
+		re.eval("writeWebGL(dir = 'webGL', filename = file.path(paste0(getwd(),\"/webGL\"), '" + filename + ".html'))");
+		double minTime = re.eval("min(mat[,3])").asDouble();
+		double maxTime = re.eval("max(mat[,3])").asDouble();
 		double[][] hull = re.eval("mat[ch,1:2]").asDoubleMatrix();
 		
 		ConvexHullAndTime convexHullAndTime = new ConvexHullAndTime(hull, minTime, maxTime);
@@ -188,7 +205,7 @@ public class MeteoService {
 	private List<GeoTimePoint> getRandomPointsWithinArea() {
 		int numberOfPoints = 30;
 		List<GeoTimePoint> geoTimePoints = new ArrayList<GeoTimePoint>();
-		Double[] minMaxBorders = getMaxMinBorders();
+		double[] minMaxBorders = getMaxMinBorders();
 //		System.out.println(minMaxBorders[0] + " "+ minMaxBorders[1] + " " + minMaxBorders[2] + " " + minMaxBorders[3]);
 		Random rd = new Random();
 		for (int i = 0; i < numberOfPoints;) {
@@ -209,7 +226,7 @@ public class MeteoService {
 	private List<MeteoPoint> getPointsAccordingToProbabilityDistribution(List<MeteoPoint> previousPoints) throws Exception {
 		int numberOfPreviousPoints = previousPoints.size();
 		int numberOfPossiblePoints = NUMBER_OF_POSSIBLE_POINTS;
-		Double[] minMaxBorders = getMaxMinBorders();
+		double[] minMaxBorders = getMaxMinBorders();
 		ProbabilityDistribution pdis = new ProbabilityDistribution();
 		List<List<Double>> possiblePoints = pdis.getAllPossiblePoints(minMaxBorders[0],
 				minMaxBorders[1], minMaxBorders[2], minMaxBorders[3], numberOfPossiblePoints,
@@ -384,8 +401,8 @@ public class MeteoService {
 		} else return -300;
 	}
 
-	private Double[] getMaxMinBorders() {
-		Double[] minMaxBorders = new Double[4];
+	private double[] getMaxMinBorders() {
+		double[] minMaxBorders = new double[4];
 		minMaxBorders[0] = areaPoints.get(0).getLatitude();
 		minMaxBorders[1] = areaPoints.get(0).getLatitude();
 		minMaxBorders[2] = areaPoints.get(0).getLongitude();
@@ -438,7 +455,7 @@ public class MeteoService {
     }
 	
 	private List<MeteoPoint> findPreviousPointsForSameRegionAndTime() throws SQLException {
-		List<MeteoPoint> previousPoints = SearchQueryDAO.findRelatedPoints(timeFrom, timeTo);
+		List<MeteoPoint> previousPoints = SearchQueryDAO.findRelatedPoints(timeFrom, timeTo, getMaxMinBorders());
 		return previousPoints;
 	}
 	

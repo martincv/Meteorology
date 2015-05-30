@@ -14,7 +14,7 @@ import model.SearchQuery;
 
 public class SearchQueryDAO {
 	
-	public static List<MeteoPoint> findRelatedPoints(Long timeFrom, Long timeTo) throws SQLException {
+	public static List<MeteoPoint> findRelatedPoints(Long timeFrom, Long timeTo, double[] extremes) throws SQLException {
 		List<MeteoPoint> relatedPoints = new ArrayList<MeteoPoint>();
 		String sql = "SELECT * FROM MeteoPoints where time >= ? AND time <= ?";
 		Connection dbConnection = null;
@@ -48,7 +48,9 @@ public class SearchQueryDAO {
 				MeteoPoint meteoPoint = new MeteoPoint(latitude, longitude, time, precipIntensity,
 						precipProbability, precipType, precipAccumulation,
 						temperature, windSpeed, humidity, pressure,nearestStormDistance);
-				relatedPoints.add(meteoPoint);
+				if(latitude >= extremes[0] && latitude <= extremes[1] && longitude >= extremes[2] && longitude <= extremes[3]) {
+					relatedPoints.add(meteoPoint);
+				}
 			}
 			return relatedPoints;
 		} finally {
